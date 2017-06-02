@@ -11,6 +11,7 @@ if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
 fi
 
 # Customize to your needs...
+cd ~
 unsetopt CORRECT                      # Disable autocorrect guesses. Happens when typing a wrong
                                       # command that may look like an existing one.
 
@@ -21,3 +22,7 @@ expand-or-complete-with-dots() {      # This bunch of code displays red dots whe
 }
 zle -N expand-or-complete-with-dots
 bindkey "^I" expand-or-complete-with-dots
+
+# History search tweeks
+bindkey "^R" history-incremental-search-backward
+bindkey -M vicmd '/' history-incremental-search-backward
