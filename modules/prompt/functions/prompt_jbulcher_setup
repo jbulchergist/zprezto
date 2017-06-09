@@ -35,27 +35,24 @@ pmodload 'helper'
 function prompt_jbulcher_color_path {
   local c
   typeset -A c
-  c[psep]="%{$(printf "\e[38;5;208m")%}"  # orange
-  c[ppart]="%{$(printf "\e[38;5;112m")%}" # green
   local thepath="${1}"
-  echo "$c[ppart]${thepath//\//$c[psep]/$c[ppart]}"
+  # %F{208} orange
+  # %F{112} green
+  print "%F{112}${thepath//\//%F{208\}/%F{112\}}"
 }
 
 prompt_jbulcher_git_info() {
   local c
   typeset -A c
-  c[psep]="%{$(printf "\e[38;5;208m")%}"  # orange
-  c[ppart]="%{$(printf "\e[38;5;112m")%}" # green
   if (( _prompt_jbulcher_precmd_async_pid > 0 )); then
     # Append Git status.
     if [[ -s "$_prompt_jbulcher_precmd_async_data" ]]; then
       alias typeset='typeset -g'
       source "$_prompt_jbulcher_precmd_async_data"
       if [[ 0 -ne $#git_info ]]; then
-        PROMPT="${FPROMPT}
-${git_info:+${(e)git_info[status]}} ${git_path}$c[psep]± "
-      else
-        PROMPT="${FPROMPT}"
+        # %F{208} orange
+        PROMPT="${JBPROMPT}
+${(e)git_info[prompt]} ${git_path}%F{208}± "
       fi
       unalias typeset
     fi
@@ -90,14 +87,9 @@ function prompt_jbulcher_precmd {
   # prompt colors
   local c
   typeset -A c
-  c[puser]="%{$(printf "\e[38;5;245m")%}" # gray
-  c[phost]="%{$(printf "\e[38;5;250m")%}" # gray
 
   # Format PWD.
-  _prompt_jbulcher_pwd=$(prompt_jbulcher_color_path "$(promptpwd)")
-
-  # Define prompts.
-  RPROMPT='${editor_info[overwrite]}%(?:: %F{1}⏎%f)${VIM:+" %B%F{6}V%f%b"}'
+  _prompt_jbulcher_pwd=$(prompt_jbulcher_color_path "$(print -P '%~')")
 
   # Kill the old process of slow commands if it is still running.
   if (( _prompt_jbulcher_precmd_async_pid > 0 )); then
@@ -116,15 +108,12 @@ function prompt_jbulcher_setup {
   prompt_opts=(cr percent subst)
   _prompt_jbulcher_precmd_async_pid=0
   _prompt_jbulcher_precmd_async_data="${TMPPREFIX}-prompt_jbulcher_data"
- 
+  _prompt_jbulcher_root='%B%(!.%F{red}#.%F{208}%%%f)%b'
+  _prompt_jbulcher_return='%(?..%F{208}[%F{red}%?%F{208}]%f )'
+
   # colors
   local c
   typeset -A c
-  c[prompt]="%{$(printf "\e[38;5;208m")%}"  # orange
-  c[puser]="%{$(printf "\e[38;5;245m")%}" # gray
-  c[phost]="%{$(printf "\e[38;5;250m")%}" # gray
-  c[ppart]="%{$(printf "\e[38;5;112m")%}" # green
-  c[psep]="%{$(printf "\e[38;5;208m")%}" # green
 
   # Load required functions.
   autoload -Uz add-zsh-hook
@@ -154,13 +143,19 @@ function prompt_jbulcher_setup {
   zstyle ':prezto:module:git:info:unmerged' format ' %%B%F{3}%U═%f%%b'
   zstyle ':prezto:module:git:info:untracked' format ' %%B%F{7}%u◼%f%%b'
   zstyle ':prezto:module:git:info:keys' format \
-    'status' "$(coalesce '%b' '%p' '%c')%s%A%B%S%a%d%m%r%U%u" 
+    'prompt' "$(coalesce '%b' '%p' '%c')%s%A%B%S%a%d%m%r%U%u" 
+
+  # Colors
+  # %F{245} gray
+  # %F{250} gray
+  # %F{112} green
+  # %F{208} orange
 
   # Define prompts.
-  PROMPT='
-${SSH_TTY:+"$c[puser]%n$c[psep]@%B$c[phost]%b%m%{$reset_color%}%B$c[psep]:%b"}%F{4}${_prompt_jbulcher_pwd}%(!. %B%F{1}#%f%b.)${editor_info[keymap]} '
-  FPROMPT="${PROMPT}"
-  RPROMPT="$(date)"
+  JBPROMPT='
+${_prompt_jbulcher_return}${SSH_TTY:+"%F{245}%n%F{208}%B@%b%F{250}%m%B%F{208}:%b"}${_prompt_jbulcher_pwd}${_prompt_jbulcher_root} '
+  PROMPT="${JBPROMPT}"
+  RPROMPT='%F{208}%*%f'
   SPROMPT='zsh: correct %F{1}%R%f to %F{2}%r%f [nyae]? '
 }
 
